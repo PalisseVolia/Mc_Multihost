@@ -1,0 +1,38 @@
+[01:04:32] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[01:04:33] [ServerMain/INFO]: No existing world data, creating new world
+[01:04:33] [ServerMain/INFO]: Loaded 1461 recipes
+[01:04:33] [ServerMain/INFO]: Loaded 1574 advancements
+[01:04:33] [Server thread/INFO]: Starting minecraft server version 1.21.10
+[01:04:33] [Server thread/INFO]: Loading properties
+[01:04:33] [Server thread/INFO]: Default game type: SURVIVAL
+[01:04:33] [Server thread/INFO]: Generating keypair
+[01:04:34] [Server thread/INFO]: Starting Minecraft server on *:25565
+[01:04:34] [Server thread/INFO]: Using epoll channel type
+[01:04:34] [Server thread/INFO]: Preparing level "world"
+[01:04:34] [Server thread/INFO]: Selecting global world spawn...
+[01:04:36] [Server thread/INFO]: Loading 0 persistent chunks...
+[01:04:36] [Server thread/INFO]: Preparing spawn area: 100%
+[01:04:36] [Server thread/INFO]: Time elapsed: 2378 ms
+[01:04:36] [Server thread/INFO]: Done (2.596s)! For help, type "help"
+[01:05:36] [Server thread/INFO]: Server empty for 60 seconds, pausing
+[01:06:12] [User Authenticator #1/INFO]: UUID of player MrPalisse is 8ec8f28e-d172-4800-bb6a-9ced86ccef9d
+[01:06:15] [Server thread/INFO]: MrPalisse[/192.168.1.15:55414] logged in with entity id 41 at (-0.5, 96.0, 8.5)
+[01:06:15] [Server thread/INFO]: MrPalisse joined the game
+[01:10:42] [Server thread/INFO]: Made MrPalisse a server operator
+[01:10:47] [Server thread/INFO]: [MrPalisse: Set own game mode to Creative Mode]
+[01:11:20] [Server thread/INFO]: MrPalisse has reached the goal [Sky's the Limit]
+[01:11:52] [Worker-Main-1/ERROR]: Detected setBlock in a far chunk [9, 89], pos: ja{x=144, y=48, z=1438}, status: minecraft:features, currently generating: ResourceKey[minecraft:worldgen/placed_feature / minecraft:large_dripstone]
+[01:11:52] [Worker-Main-1/ERROR]: Detected setBlock in a far chunk [9, 89], pos: ja{x=145, y=48, z=1438}, status: minecraft:features, currently generating: ResourceKey[minecraft:worldgen/placed_feature / minecraft:large_dripstone]
+[01:11:58] [Server thread/INFO]: MrPalisse lost connection: Disconnected
+[01:11:58] [Server thread/INFO]: MrPalisse left the game
+[01:12:06] [Server thread/INFO]: Stopping the server
+[01:12:06] [Server thread/INFO]: Stopping server
+[01:12:06] [Server thread/INFO]: Saving players
+[01:12:06] [Server thread/INFO]: Saving worlds
+[01:12:06] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[01:12:06] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[01:12:06] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[01:12:06] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[01:12:06] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[01:12:06] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[01:12:06] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
