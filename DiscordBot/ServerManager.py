@@ -50,18 +50,10 @@ def run_bot() -> None:
     async def on_ready() -> None:
         logging.info("Logged in as %s (%s)", bot.user, bot.user.id if bot.user else "?")
         try:
-            if guild_objs:
-                # Sync commands to each provided guild for immediate availability
-                total = 0
-                for g in guild_objs:
-                    synced = await bot.tree.sync(guild=g)
-                    total += len(synced)
-                    logging.info("Synced %d command(s) to guild %s", len(synced), g.id)
-                logging.info("Completed sync across %d guild(s). Total commands: %d", len(guild_objs), total)
-            else:
-                # Global sync can take time to propagate
-                synced = await bot.tree.sync()
-                logging.info("Synced %d global command(s)", len(synced))
+            for g in guild_objs:
+                synced = await bot.tree.sync(guild=g)
+                logging.info("Synced %d command(s) to guild %s", len(synced), g.id)
+            logging.info("Completed sync across %d guild(s).", len(guild_objs))
         except Exception:  # pragma: no cover - defensive logging
             logging.exception("Failed to sync application commands")
 
