@@ -1,6 +1,6 @@
 """
-Basic Discord bot bringing the client online and exposing a single
-slash command: `/hello` -> replies with "Hello world!".
+Discord bot bringing the client online and exposing commands:
+`/hello` -> replies with "Hello world!".
 
 Usage:
   - Install dependency: pip install discord.py
@@ -9,7 +9,7 @@ Usage:
 
 Config keys (config/.env):
   - DISCORD_TOKEN=...               # required
-  - DISCORD_GUILD_IDS=1,2,3         # optional; single or multiple guild (server) IDs
+  - DISCORD_GUILD_IDS=1,2,3         # single or multiple guild (server) IDs
 """
 
 from __future__ import annotations
@@ -59,6 +59,10 @@ def run_bot() -> None:
 
     # Restrict command registration to provided guilds
     guild_decorator = app_commands.guilds(*guild_objs) if guild_objs else (lambda x: x)
+
+    # ====================================================
+    # COMMANDS
+    # ====================================================
 
     @bot.tree.command(name="hello", description="Replies with Hello world!")
     @guild_decorator
