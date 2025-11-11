@@ -34,8 +34,13 @@ def _configure_logging() -> None:
 def run_bot() -> None:
     _configure_logging()
     
-    # Create a lsit of all available servers
+    # Create a list of all available servers (single shared instances)
     servers = get_servers()
+    # Create lists of started / stopped servers
+    def running_servers() -> list:
+        return [s for s in servers if s.is_running()]
+    def stopped_servers() -> list:
+        return [s for s in servers if not s.is_running()]
 
     # Load env from config/.env before reading values
     load_env_from_file()
@@ -69,33 +74,87 @@ def run_bot() -> None:
     # COMMANDS
     # ====================================================
 
+    # ---------------------
+    # TEST
+    # ---------------------
+    
     # TODO: Example, delete later
     @bot.tree.command(name="hello", description="Replies with Hello world!")
     @guild_decorator
     async def hello(interaction: discord.Interaction) -> None:
         await interaction.response.send_message("Hello world!", ephemeral=True)
 
+    # ---------------------
+    # START & STOP
+    # ---------------------
+    
     @bot.tree.command(name="start", description="Start a server")
     @guild_decorator
     async def start(interaction: discord.Interaction) -> None:
-        srv = servers[1]
-        if srv.is_running():
-            await interaction.response.send_message("Server already online", ephemeral=True)
-        else:
-            srv.start()
-            msg = f"Started {srv.name}" if srv.is_running() else f"Failed to start {srv.name}"
-            await interaction.response.send_message(msg, ephemeral=True)
+        choices = stopped_servers()
+        if not choices:
+            await interaction.response.send_message("No stopped servers available.", ephemeral=True)
+            return
+
+        class StartSelect(discord.ui.Select):
+            def __init__(self) -> None:
+                options = [
+                    discord.SelectOption(label=srv.name or "(unnamed)", value=srv.name or "")
+                    for srv in choices
+                ]
+                super().__init__(
+                    placeholder="Select a server to start",
+                    min_values=1,
+                    max_values=1,
+                    options=options,
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                name = self.values[0]
+                srv = next((s for s in servers if (s.name or "") == name), None)
+                srv.start()
+                await i.response.edit_message(content=f"Starting - {srv.name}", view=None)
+
+        class StartView(discord.ui.View):
+            def __init__(self) -> None:
+                super().__init__(timeout=60)
+                self.add_item(StartSelect())
+
+        await interaction.response.send_message("Pick a server to start:", view=StartView(), ephemeral=True)
 
     @bot.tree.command(name="stop", description="Stop a server")
     @guild_decorator
     async def stop(interaction: discord.Interaction) -> None:
-        srv = servers[1]
-        if not srv.is_running():
-            await interaction.response.send_message("Server already offline", ephemeral=True)
-        else:
-            srv.stop()
-            msg = f"Stopped {srv.name}" if not srv.is_running() else f"Failed to stop {srv.name}"
-            await interaction.response.send_message(msg, ephemeral=True)
+        choices = running_servers()
+        if not choices:
+            await interaction.response.send_message("No running servers to stop.", ephemeral=True)
+            return
+
+        class StopSelect(discord.ui.Select):
+            def __init__(self) -> None:
+                options = [
+                    discord.SelectOption(label=srv.name or "(unnamed)", value=srv.name or "")
+                    for srv in choices
+                ]
+                super().__init__(
+                    placeholder="Select a server to stop",
+                    min_values=1,
+                    max_values=1,
+                    options=options,
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                name = self.values[0]
+                srv = next((s for s in servers if (s.name or "") == name), None)
+                rc = srv.stop()
+                await i.response.edit_message(content=f"Stopping - {srv.name}", view=None)
+
+        class StopView(discord.ui.View):
+            def __init__(self) -> None:
+                super().__init__(timeout=60)
+                self.add_item(StopSelect())
+
+        await interaction.response.send_message("Pick a server to stop:", view=StopView(), ephemeral=True)
 
     bot.run(token)
 
