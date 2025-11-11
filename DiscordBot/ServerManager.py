@@ -157,7 +157,7 @@ def run_bot() -> None:
         class XmsSelect(discord.ui.Select):
             def __init__(self) -> None:
                 default_xms = 2
-                xms_values = list(range(1, 17)) + [20, 24]
+                xms_values = [1, 2, 4, 8, 16, 20]
                 options = [
                     discord.SelectOption(
                         label=f"Xms {gb}G",
@@ -186,7 +186,7 @@ def run_bot() -> None:
         class XmxSelect(discord.ui.Select):
             def __init__(self) -> None:
                 default_xmx = 4
-                xmx_values = list(range(1, 17)) + [20, 24, 28, 32, 40, 48, 64]
+                xmx_values = [1, 2, 4, 8, 16, 20]
                 options = [
                     discord.SelectOption(
                         label=f"Xmx {gb}G",

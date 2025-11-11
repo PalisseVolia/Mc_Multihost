@@ -65,7 +65,7 @@ class MinecraftServer:
         in the server directory.
         """
         try:
-            if self.xmx <= 0 or self.xms <= 0 or self.xmx <= self.xms:
+            if self.xmx <= 0 or self.xms <= 0 or self.xmx < self.xms:
                 return -1
             if not os.path.isfile(self.jar):
                 return -1
