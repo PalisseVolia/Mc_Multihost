@@ -21,7 +21,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from Utils.env import get_env, load_env_from_file, parse_int_ids
-from Utils.UtilsServer import get_servers
+from Utils.UtilsServer import get_servers, get_available_memory_gb
 from typing import Optional
 
 
@@ -104,18 +104,41 @@ def run_bot() -> None:
 
         # One view that contains: server dropdown + Xms + Xmx + Start/Cancel
         class StartView(discord.ui.View):
-            def __init__(self, servers_list: list) -> None:
+            def __init__(self, servers_list: list, available_gb: int) -> None:
                 super().__init__(timeout=120)
                 self.servers_list = servers_list
                 self.selected_server_name: Optional[str] = None
                 self.selected_xms: int = 2
                 self.selected_xmx: int = 4
+                self.available_gb: int = int(available_gb)
 
                 self.add_item(ServerSelect(servers_list))
                 self.add_item(XmsSelect())
-                self.add_item(XmxSelect())
+                self.xmx_select = XmxSelect(self.available_gb)
+                self.add_item(self.xmx_select)
+                try:
+                    # Align selected_xmx with the default shown in the select
+                    default_opt = next((opt for opt in self.xmx_select.options if getattr(opt, 'default', False)), None)
+                    if default_opt is not None:
+                        self.selected_xmx = int(str(default_opt.value))
+                    else:
+                        # Fallback to the last option
+                        self.selected_xmx = int(str(self.xmx_select.options[-1].value))
+                except Exception:
+                    pass
                 self.add_item(StartButton())
                 self.add_item(CancelButton())
+
+                # If no memory is available, disable Xmx and Start buttons
+                if self.available_gb <= 0:
+                    try:
+                        self.xmx_select.disabled = True
+                        # Disable Start button
+                        for child in self.children:
+                            if isinstance(child, discord.ui.Button) and getattr(child, 'label', '') == 'Start':
+                                child.disabled = True
+                    except Exception:
+                        pass
 
             async def on_timeout(self) -> None:  # pragma: no cover - best effort
                 try:
@@ -184,19 +207,24 @@ def run_bot() -> None:
                 await i.response.defer()
 
         class XmxSelect(discord.ui.Select):
-            def __init__(self) -> None:
+            def __init__(self, available_gb: int) -> None:
                 default_xmx = 4
-                xmx_values = [1, 2, 4, 8, 16, 20]
+                base_values = [1, 2, 4, 8, 12, 16, 20, 24, 32]
+                # Filter by available memory, keep at least one option to satisfy Discord
+                filtered = [gb for gb in base_values if gb <= max(available_gb, 1)]
+                if not filtered:
+                    filtered = [1]
+                default_choice = min(default_xmx, filtered[-1])
                 options = [
                     discord.SelectOption(
                         label=f"Xmx {gb}G",
                         value=str(gb),
-                        default=(gb == default_xmx),
+                        default=(gb == default_choice),
                     )
-                    for gb in xmx_values
+                    for gb in filtered
                 ]
                 super().__init__(
-                    placeholder="Max heap Xmx",
+                    placeholder="Max heap Xmx (filtered by available)",
                     min_values=1,
                     max_values=1,
                     options=options,
@@ -239,6 +267,14 @@ def run_bot() -> None:
                         content="Xmx must be greater than or equal to Xms.", view=view
                     )
                     return
+                # Re-check available memory at click time to avoid races
+                current_avail = get_available_memory_gb(servers)
+                if xmx > current_avail:
+                    await i.response.edit_message(
+                        content=f"Not enough memory. Available: {current_avail}G. Pick a smaller Xmx.",
+                        view=view,
+                    )
+                    return
 
                 # Apply and start
                 srv.xms = xms
@@ -262,9 +298,11 @@ def run_bot() -> None:
             async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
                 await i.response.edit_message(content="Cancelled.", view=None)
 
+        available_gb = get_available_memory_gb(servers)
+        tail = " Showing first 25 servers." if too_many else ""
         await interaction.response.send_message(
-            ("Pick a server and memory, then Start:" + (" Showing first 25 servers." if too_many else "")),
-            view=StartView(server_choices),
+            f"Pick a server and memory, then Start:\nAvailable memory: {available_gb}G" + tail,
+            view=StartView(server_choices, available_gb),
             ephemeral=True,
         )
 

@@ -37,3 +37,32 @@ def get_servers(servers_root: Optional[str] = None) -> List[MinecraftServer]:
     # Sort by name for a stable order
     servers.sort(key=lambda s: (s.name or "").lower())
     return servers
+
+def get_available_memory_gb(
+    servers: Optional[List[MinecraftServer]] = None,
+    reserve_gb: int = 6,
+) -> int:
+    """Compute available memory for new servers in GB.
+
+    - Start with total physical memory in GB.
+    - Keep `reserve_gb` free for the system (default 6 GB).
+    - Subtract the sum of Xmx values of currently running servers.
+    - Returns 0 or greater (never negative).
+    """
+    try:
+        total_gb = 32
+        if total_gb <= 0:
+            return 0
+        running_xmx = 0
+        if servers is None:
+            servers = get_servers()
+        for s in servers:
+            try:
+                if s.is_running():
+                    running_xmx += int(s.xmx)
+            except Exception:
+                continue
+        avail = total_gb - int(reserve_gb) - running_xmx
+        return avail if avail > 0 else 0
+    except Exception:
+        return 0
