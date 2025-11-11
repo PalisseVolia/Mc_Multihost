@@ -15,11 +15,13 @@ Config keys (config/.env):
 from __future__ import annotations
 
 import logging
+import time
 
 import discord
 from discord import app_commands
 from discord.ext import commands
 from Utils.env import get_env, load_env_from_file, parse_int_ids
+from Utils.UtilsServer import get_servers
 
 
 def _configure_logging() -> None:
@@ -31,6 +33,9 @@ def _configure_logging() -> None:
 
 def run_bot() -> None:
     _configure_logging()
+    
+    # Create a lsit of all available servers
+    servers = get_servers()
 
     # Load env from config/.env before reading values
     load_env_from_file()
@@ -64,10 +69,33 @@ def run_bot() -> None:
     # COMMANDS
     # ====================================================
 
+    # TODO: Example, delete later
     @bot.tree.command(name="hello", description="Replies with Hello world!")
     @guild_decorator
     async def hello(interaction: discord.Interaction) -> None:
         await interaction.response.send_message("Hello world!", ephemeral=True)
+
+    @bot.tree.command(name="start", description="Start a server")
+    @guild_decorator
+    async def start(interaction: discord.Interaction) -> None:
+        srv = servers[1]
+        if srv.is_running():
+            await interaction.response.send_message("Server already online", ephemeral=True)
+        else:
+            srv.start()
+            msg = f"Started {srv.name}" if srv.is_running() else f"Failed to start {srv.name}"
+            await interaction.response.send_message(msg, ephemeral=True)
+
+    @bot.tree.command(name="stop", description="Stop a server")
+    @guild_decorator
+    async def stop(interaction: discord.Interaction) -> None:
+        srv = servers[1]
+        if not srv.is_running():
+            await interaction.response.send_message("Server already offline", ephemeral=True)
+        else:
+            srv.stop()
+            msg = f"Stopped {srv.name}" if not srv.is_running() else f"Failed to stop {srv.name}"
+            await interaction.response.send_message(msg, ephemeral=True)
 
     bot.run(token)
 
