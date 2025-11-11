@@ -22,6 +22,7 @@ from discord import app_commands
 from discord.ext import commands
 from Utils.env import get_env, load_env_from_file, parse_int_ids
 from Utils.UtilsServer import get_servers
+from typing import Optional
 
 
 def _configure_logging() -> None:
@@ -96,31 +97,176 @@ def run_bot() -> None:
             await interaction.response.send_message("No stopped servers available.", ephemeral=True)
             return
 
-        class StartSelect(discord.ui.Select):
-            def __init__(self) -> None:
+        # Discord select menus support up to 25 options
+        MAX_OPTIONS = 25
+        server_choices = choices[:MAX_OPTIONS]
+        too_many = len(choices) > MAX_OPTIONS
+
+        # One view that contains: server dropdown + Xms + Xmx + Start/Cancel
+        class StartView(discord.ui.View):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(timeout=120)
+                self.servers_list = servers_list
+                self.selected_server_name: Optional[str] = None
+                self.selected_xms: int = 2
+                self.selected_xmx: int = 4
+
+                self.add_item(ServerSelect(servers_list))
+                self.add_item(XmsSelect())
+                self.add_item(XmxSelect())
+                self.add_item(StartButton())
+                self.add_item(CancelButton())
+
+            async def on_timeout(self) -> None:  # pragma: no cover - best effort
+                try:
+                    for child in self.children:
+                        if isinstance(child, (discord.ui.Select, discord.ui.Button)):
+                            child.disabled = True
+                except Exception:
+                    pass
+
+            def resolve_selected_server(self):
+                if not self.selected_server_name:
+                    return None
+                return next(
+                    (s for s in self.servers_list if (s.name or "") == self.selected_server_name),
+                    None,
+                )
+
+        class ServerSelect(discord.ui.Select):
+            def __init__(self, servers_list: list) -> None:
                 options = [
-                    discord.SelectOption(label=srv.name or "(unnamed)", value=srv.name or "")
-                    for srv in choices
+                    discord.SelectOption(
+                        label=srv.name or "(unnamed)",
+                        value=srv.name or "",
+                    )
+                    for srv in servers_list
                 ]
                 super().__init__(
-                    placeholder="Select a server to start",
+                    placeholder="Server",
                     min_values=1,
                     max_values=1,
                     options=options,
                 )
 
             async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
-                name = self.values[0]
-                srv = next((s for s in servers if (s.name or "") == name), None)
-                srv.start()
-                await i.response.edit_message(content=f"Starting - {srv.name}", view=None)
+                if self.view and isinstance(self.view, StartView):
+                    self.view.selected_server_name = self.values[0]
+                await i.response.defer()
 
-        class StartView(discord.ui.View):
+        class XmsSelect(discord.ui.Select):
             def __init__(self) -> None:
-                super().__init__(timeout=60)
-                self.add_item(StartSelect())
+                default_xms = 2
+                xms_values = list(range(1, 17)) + [20, 24]
+                options = [
+                    discord.SelectOption(
+                        label=f"Xms {gb}G",
+                        value=str(gb),
+                        default=(gb == default_xms),
+                    )
+                    for gb in xms_values
+                ]
+                super().__init__(
+                    placeholder="Initial heap Xms",
+                    min_values=1,
+                    max_values=1,
+                    options=options,
+                )
 
-        await interaction.response.send_message("Pick a server to start:", view=StartView(), ephemeral=True)
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                try:
+                    val = int(self.values[0])
+                except Exception:
+                    await i.response.edit_message(content="Invalid Xms value.", view=self.view)
+                    return
+                if self.view and isinstance(self.view, StartView):
+                    self.view.selected_xms = val
+                await i.response.defer()
+
+        class XmxSelect(discord.ui.Select):
+            def __init__(self) -> None:
+                default_xmx = 4
+                xmx_values = list(range(1, 17)) + [20, 24, 28, 32, 40, 48, 64]
+                options = [
+                    discord.SelectOption(
+                        label=f"Xmx {gb}G",
+                        value=str(gb),
+                        default=(gb == default_xmx),
+                    )
+                    for gb in xmx_values
+                ]
+                super().__init__(
+                    placeholder="Max heap Xmx",
+                    min_values=1,
+                    max_values=1,
+                    options=options,
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                try:
+                    val = int(self.values[0])
+                except Exception:
+                    await i.response.edit_message(content="Invalid Xmx value.", view=self.view)
+                    return
+                if self.view and isinstance(self.view, StartView):
+                    self.view.selected_xmx = val
+                await i.response.defer()
+
+        class StartButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Start", style=discord.ButtonStyle.success)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, StartView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                view: StartView = self.view
+                srv = view.resolve_selected_server()
+                if not srv:
+                    await i.response.edit_message(
+                        content="Please select a server before starting.", view=view
+                    )
+                    return
+                xms = view.selected_xms
+                xmx = view.selected_xmx
+                if xms <= 0 or xmx <= 0:
+                    await i.response.edit_message(
+                        content="Xmx/Xms must be positive.", view=view
+                    )
+                    return
+                if xmx < xms:
+                    await i.response.edit_message(
+                        content="Xmx must be greater than or equal to Xms.", view=view
+                    )
+                    return
+
+                # Apply and start
+                srv.xms = xms
+                srv.xmx = xmx
+                pid = srv.start()
+                if pid <= 0:
+                    await i.response.edit_message(
+                        content=f"Failed to start {srv.name} with Xmx={xmx}G Xms={xms}G.",
+                        view=view,
+                    )
+                    return
+                await i.response.edit_message(
+                    content=f"Starting - {srv.name} (PID {pid}) with Xmx={xmx}G Xms={xms}G",
+                    view=None,
+                )
+
+        class CancelButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Cancel", style=discord.ButtonStyle.danger)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                await i.response.edit_message(content="Cancelled.", view=None)
+
+        await interaction.response.send_message(
+            ("Pick a server and memory, then Start:" + (" Showing first 25 servers." if too_many else "")),
+            view=StartView(server_choices),
+            ephemeral=True,
+        )
 
     @bot.tree.command(name="stop", description="Stop a server")
     @guild_decorator
