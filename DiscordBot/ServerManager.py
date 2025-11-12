@@ -86,6 +86,10 @@ def run_bot() -> None:
         await interaction.response.send_message("Hello world!", ephemeral=True)
 
     # ---------------------
+    # GENERAL COMMANDS
+    # ---------------------
+
+    # ---------------------
     # START & STOP
     # ---------------------
     

@@ -1,25 +1,32 @@
-[01:35:24] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
-[01:35:26] [ServerMain/INFO]: Loaded 1461 recipes
-[01:35:26] [ServerMain/INFO]: Loaded 1574 advancements
-[01:35:26] [Server thread/INFO]: Starting minecraft server version 1.21.10
-[01:35:26] [Server thread/INFO]: Loading properties
-[01:35:26] [Server thread/INFO]: Default game type: SURVIVAL
-[01:35:26] [Server thread/INFO]: Generating keypair
-[01:35:26] [Server thread/INFO]: Starting Minecraft server on *:25565
-[01:35:26] [Server thread/INFO]: Using epoll channel type
-[01:35:26] [Server thread/INFO]: Preparing level "world"
-[01:35:26] [Server thread/INFO]: Loading 0 persistent chunks...
-[01:35:26] [Server thread/INFO]: Preparing spawn area: 100%
-[01:35:26] [Server thread/INFO]: Time elapsed: 41 ms
-[01:35:26] [Server thread/INFO]: Done (0.295s)! For help, type "help"
-[01:35:40] [Server thread/INFO]: Stopping the server
-[01:35:40] [Server thread/INFO]: Stopping server
-[01:35:40] [Server thread/INFO]: Saving players
-[01:35:40] [Server thread/INFO]: Saving worlds
-[01:35:40] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
-[01:35:40] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
-[01:35:40] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
-[01:35:40] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
-[01:35:40] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
-[01:35:40] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
-[01:35:40] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
+[14:08:58] [ServerMain/INFO]: Environment: Environment[sessionHost=https://sessionserver.mojang.com, servicesHost=https://api.minecraftservices.com, profilesHost=https://api.mojang.com, name=PROD]
+[14:08:59] [ServerMain/INFO]: Loaded 1461 recipes
+[14:08:59] [ServerMain/INFO]: Loaded 1574 advancements
+[14:08:59] [Server thread/INFO]: Starting minecraft server version 1.21.10
+[14:08:59] [Server thread/INFO]: Loading properties
+[14:08:59] [Server thread/INFO]: Default game type: SURVIVAL
+[14:08:59] [Server thread/INFO]: Generating keypair
+[14:08:59] [Server thread/INFO]: Starting Minecraft server on *:25565
+[14:08:59] [Server thread/INFO]: Using epoll channel type
+[14:08:59] [Server thread/INFO]: Preparing level "world"
+[14:08:59] [Server thread/INFO]: Loading 0 persistent chunks...
+[14:08:59] [Server thread/INFO]: Preparing spawn area: 100%
+[14:09:00] [Server thread/INFO]: Time elapsed: 13 ms
+[14:09:00] [Server thread/INFO]: Done (0.240s)! For help, type "help"
+[14:09:59] [Server thread/INFO]: Server empty for 60 seconds, pausing
+[14:21:37] [User Authenticator #1/INFO]: UUID of player MrPalisse is 8ec8f28e-d172-4800-bb6a-9ced86ccef9d
+[14:21:38] [Server thread/INFO]: MrPalisse[/109.215.170.54:61957] logged in with entity id 44 at (175.20656545663584, 139.50106078662907, 23.001966427807172)
+[14:21:38] [Server thread/INFO]: MrPalisse joined the game
+[14:21:41] [Server thread/INFO]: MrPalisse lost connection: Disconnected
+[14:21:41] [Server thread/INFO]: MrPalisse left the game
+[14:22:41] [Server thread/INFO]: Server empty for 60 seconds, pausing
+[14:33:27] [Server thread/INFO]: Stopping the server
+[14:33:27] [Server thread/INFO]: Stopping server
+[14:33:27] [Server thread/INFO]: Saving players
+[14:33:27] [Server thread/INFO]: Saving worlds
+[14:33:27] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:overworld
+[14:33:27] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_end
+[14:33:27] [Server thread/INFO]: Saving chunks for level 'ServerLevel[world]'/minecraft:the_nether
+[14:33:27] [Server thread/INFO]: ThreadedAnvilChunkStorage (world): All chunks are saved
+[14:33:27] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM1): All chunks are saved
+[14:33:27] [Server thread/INFO]: ThreadedAnvilChunkStorage (DIM-1): All chunks are saved
+[14:33:27] [Server thread/INFO]: ThreadedAnvilChunkStorage: All dimensions are saved
