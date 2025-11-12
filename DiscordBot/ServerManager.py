@@ -172,8 +172,386 @@ def run_bot() -> None:
         )
 
     # ---------------------
-    # TODO : MINECRAFT COMMANDS
+    # MINECRAFT COMMANDS
     # ---------------------
+    
+    # Helper UI pieces reused by commands below
+    def _server_select_options(servers_list: list) -> list[discord.SelectOption]:
+        return [
+            discord.SelectOption(label=srv.name or "(unnamed)", value=srv.name or "")
+            for srv in servers_list
+        ]
+
+    # /whitelist (add <player>)
+    @bot.tree.command(name="whitelist", description="Add a player to the server whitelist")
+    @guild_decorator
+    async def whitelist(interaction: discord.Interaction) -> None:
+        choices = running_servers()
+        if not choices:
+            await interaction.response.send_message("No running servers available.", ephemeral=True)
+            return
+
+        class WhitelistView(discord.ui.View):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(timeout=120)
+                self.servers_list = servers_list
+                self.selected_server_name: Optional[str] = None
+                self.player_name: Optional[str] = None
+                self.add_item(ServerSelect(servers_list))
+                self.add_item(SetPlayerButton())
+                self.add_item(ExecuteButton())
+                self.add_item(CancelButton())
+
+            def resolve_selected_server(self):
+                if not self.selected_server_name:
+                    return None
+                return next(
+                    (s for s in self.servers_list if (s.name or "") == self.selected_server_name),
+                    None,
+                )
+
+            async def on_timeout(self) -> None:  # pragma: no cover - best effort
+                try:
+                    for child in self.children:
+                        if isinstance(child, (discord.ui.Select, discord.ui.Button)):
+                            child.disabled = True
+                except Exception:
+                    pass
+
+        class ServerSelect(discord.ui.Select):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(
+                    placeholder="Select a running server",
+                    min_values=1,
+                    max_values=1,
+                    options=_server_select_options(servers_list),
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if self.view and isinstance(self.view, WhitelistView):
+                    self.view.selected_server_name = self.values[0]
+                await i.response.defer()
+
+        class PlayerModal(discord.ui.Modal, title="Whitelist Player"):
+            def __init__(self, parent: 'WhitelistView') -> None:
+                super().__init__()
+                self.parent = parent
+                self.player_input = discord.ui.TextInput(
+                    label="Player name",
+                    placeholder="e.g. Notch",
+                    min_length=1,
+                    max_length=32,
+                    required=True,
+                )
+                self.add_item(self.player_input)
+
+            async def on_submit(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                self.parent.player_name = str(self.player_input.value).strip()
+                await i.response.edit_message(
+                    content=f"Player set to: {self.parent.player_name}",
+                    view=self.parent,
+                )
+
+        class SetPlayerButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Set Player", style=discord.ButtonStyle.secondary)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, WhitelistView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                await i.response.send_modal(PlayerModal(self.view))
+
+        class ExecuteButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Execute", style=discord.ButtonStyle.success)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, WhitelistView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                view: WhitelistView = self.view
+                srv = view.resolve_selected_server()
+                if not srv:
+                    await i.response.edit_message(content="Please select a server first.", view=view)
+                    return
+                if not view.player_name:
+                    await i.response.edit_message(content="Please set a player name first.", view=view)
+                    return
+                cmd = f"whitelist add {view.player_name}"
+                rc = srv.send_command(cmd)  # type: ignore[attr-defined]
+                if rc == 0:
+                    await i.response.edit_message(
+                        content=f"Sent to {srv.name}: {cmd}",
+                        view=None,
+                    )
+                else:
+                    await i.response.edit_message(
+                        content=f"Failed to send command to {srv.name}. Is it started by this bot?",
+                        view=None,
+                    )
+
+        class CancelButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Cancel", style=discord.ButtonStyle.danger)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                await i.response.edit_message(content="Cancelled.", view=None)
+
+        await interaction.response.send_message(
+            "Select a running server, then set a player and Execute.",
+            view=WhitelistView(choices),
+            ephemeral=True,
+        )
+
+    # /clean items
+    clean = app_commands.Group(name="clean", description="Cleanup utilities")
+    # Apply guild scoping to the group (subcommands cannot set default guilds)
+    clean = guild_decorator(clean)
+
+    @clean.command(name="items", description="Remove all dropped items on a server")
+    async def clean_items(interaction: discord.Interaction) -> None:
+        choices = running_servers()
+        if not choices:
+            await interaction.response.send_message("No running servers available.", ephemeral=True)
+            return
+
+        class CleanView(discord.ui.View):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(timeout=60)
+                self.servers_list = servers_list
+                self.selected_server_name: Optional[str] = None
+                self.add_item(ServerSelect(servers_list))
+                self.add_item(ExecuteButton())
+                self.add_item(CancelButton())
+
+            def resolve_selected_server(self):
+                if not self.selected_server_name:
+                    return None
+                return next(
+                    (s for s in self.servers_list if (s.name or "") == self.selected_server_name),
+                    None,
+                )
+
+            async def on_timeout(self) -> None:  # pragma: no cover - best effort
+                try:
+                    for child in self.children:
+                        if isinstance(child, (discord.ui.Select, discord.ui.Button)):
+                            child.disabled = True
+                except Exception:
+                    pass
+
+        class ServerSelect(discord.ui.Select):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(
+                    placeholder="Select a running server",
+                    min_values=1,
+                    max_values=1,
+                    options=_server_select_options(servers_list),
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if self.view and isinstance(self.view, CleanView):
+                    self.view.selected_server_name = self.values[0]
+                await i.response.defer()
+
+        class ExecuteButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Clean Items", style=discord.ButtonStyle.success)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, CleanView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                view: CleanView = self.view
+                srv = view.resolve_selected_server()
+                if not srv:
+                    await i.response.edit_message(content="Please select a server first.", view=view)
+                    return
+                cmd = "kill @e[type=item]"
+                rc = srv.send_command(cmd)  # type: ignore[attr-defined]
+                if rc == 0:
+                    await i.response.edit_message(
+                        content=f"Sent to {srv.name}: {cmd}",
+                        view=None,
+                    )
+                else:
+                    await i.response.edit_message(
+                        content=f"Failed to send command to {srv.name}. Is it started by this bot?",
+                        view=None,
+                    )
+
+        class CancelButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Cancel", style=discord.ButtonStyle.danger)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                await i.response.edit_message(content="Cancelled.", view=None)
+
+        await interaction.response.send_message(
+            "Select a running server, then Clean Items.",
+            view=CleanView(choices),
+            ephemeral=True,
+        )
+
+    # Register the clean group on the tree
+    bot.tree.add_command(clean)
+
+    # /clean mob
+    @clean.command(name="mob", description="Kill mobs of a given type and clear their drops")
+    async def clean_mob(interaction: discord.Interaction) -> None:
+        choices = running_servers()
+        if not choices:
+            await interaction.response.send_message("No running servers available.", ephemeral=True)
+            return
+
+        class CleanMobView(discord.ui.View):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(timeout=120)
+                self.servers_list = servers_list
+                self.selected_server_name: Optional[str] = None
+                self.mob_id: Optional[str] = None
+                self.add_item(ServerSelect(servers_list))
+                self.add_item(SetMobButton())
+                self.add_item(ExecuteButton())
+                self.add_item(CancelButton())
+
+            def resolve_selected_server(self):
+                if not self.selected_server_name:
+                    return None
+                return next(
+                    (s for s in self.servers_list if (s.name or "") == self.selected_server_name),
+                    None,
+                )
+
+            async def on_timeout(self) -> None:  # pragma: no cover - best effort
+                try:
+                    for child in self.children:
+                        if isinstance(child, (discord.ui.Select, discord.ui.Button)):
+                            child.disabled = True
+                except Exception:
+                    pass
+
+        class ServerSelect(discord.ui.Select):
+            def __init__(self, servers_list: list) -> None:
+                super().__init__(
+                    placeholder="Select a running server",
+                    min_values=1,
+                    max_values=1,
+                    options=_server_select_options(servers_list),
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if self.view and isinstance(self.view, CleanMobView):
+                    self.view.selected_server_name = self.values[0]
+                await i.response.defer()
+
+        class MobModal(discord.ui.Modal, title="Mob Type"):
+            def __init__(self, parent: 'CleanMobView') -> None:
+                super().__init__()
+                self.parent = parent
+                self.mob_input = discord.ui.TextInput(
+                    label="Mob ID (e.g., minecraft:enderman)",
+                    placeholder="minecraft:zombie",
+                    min_length=1,
+                    max_length=64,
+                    required=True,
+                )
+                self.add_item(self.mob_input)
+
+            async def on_submit(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                typed = str(self.mob_input.value).strip()
+                self.parent.mob_id = typed
+                await i.response.edit_message(
+                    content=f"Mob type set to: {typed}",
+                    view=self.parent,
+                )
+
+        class SetMobButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Set Mob", style=discord.ButtonStyle.secondary)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, CleanMobView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                await i.response.send_modal(MobModal(self.view))
+
+        class ExecuteButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Execute", style=discord.ButtonStyle.success)
+
+            @staticmethod
+            def _is_blocked_type(mob_type: str) -> bool:
+                t = mob_type.strip().lower()
+                return t == "player" or t == "minecraft:player"
+
+            @staticmethod
+            def _is_valid_type(mob_type: str) -> bool:
+                if not mob_type or any(ch.isspace() for ch in mob_type):
+                    return False
+                if "@" in mob_type:
+                    return False
+                # allow namespace:id or id
+                allowed = set("abcdefghijklmnopqrstuvwxyz0123456789_:-")
+                return all(ch in allowed for ch in mob_type.lower())
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                if not self.view or not isinstance(self.view, CleanMobView):
+                    await i.response.edit_message(content="Internal error.", view=None)
+                    return
+                view: CleanMobView = self.view
+                srv = view.resolve_selected_server()
+                if not srv:
+                    await i.response.edit_message(content="Please select a server first.", view=view)
+                    return
+                mob_type = (view.mob_id or "").strip()
+                if not self._is_valid_type(mob_type):
+                    await i.response.edit_message(content="Invalid mob type.", view=view)
+                    return
+                if self._is_blocked_type(mob_type):
+                    await i.response.edit_message(content="Refused: type=player is not allowed.", view=view)
+                    return
+
+                cmd1 = f"kill @e[type={mob_type}]"
+                rc1 = srv.send_command(cmd1)  # type: ignore[attr-defined]
+                # Regardless of rc1, also clear item drops
+                cmd2 = "kill @e[type=item]"
+                rc2 = srv.send_command(cmd2)  # type: ignore[attr-defined]
+
+                if rc1 == 0 and rc2 == 0:
+                    await i.response.edit_message(
+                        content=f"Sent to {srv.name}: {cmd1} and {cmd2}",
+                        view=None,
+                    )
+                elif rc1 == 0:
+                    await i.response.edit_message(
+                        content=f"Sent to {srv.name}: {cmd1}. Failed to send: {cmd2}",
+                        view=None,
+                    )
+                elif rc2 == 0:
+                    await i.response.edit_message(
+                        content=f"Failed to send: {cmd1}. Sent cleanup: {cmd2}",
+                        view=None,
+                    )
+                else:
+                    await i.response.edit_message(
+                        content=f"Failed to send commands to {srv.name}. Is it started by this bot?",
+                        view=None,
+                    )
+
+        class CancelButton(discord.ui.Button):
+            def __init__(self) -> None:
+                super().__init__(label="Cancel", style=discord.ButtonStyle.danger)
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                await i.response.edit_message(content="Cancelled.", view=None)
+
+        await interaction.response.send_message(
+            "Select a running server, set a mob type, then Execute.",
+            view=CleanMobView(choices),
+            ephemeral=True,
+        )
 
     # ---------------------
     # START & STOP
