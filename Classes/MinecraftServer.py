@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import os
 import subprocess
+import logging
+from datetime import datetime
 from dataclasses import dataclass
 from typing import Optional
+from Utils.McJava import resolve_java_for_server
 
 
 @dataclass
@@ -24,6 +27,7 @@ class MinecraftServer:
     name: Optional[str] = None
     pid: int = 0
     proc: Optional[subprocess.Popen] = None
+    log_path: Optional[str] = None
 
     def __post_init__(self) -> None:
         # Normalize and set default name
@@ -61,33 +65,77 @@ class MinecraftServer:
     def start(self) -> int:
         """Start the server; return PID or -1 on error.
 
-        Runs: java -Xmx{xmx}G -Xms{xms}G -jar server.jar nogui
+        Runs: <java> -Xmx{xmx}G -Xms{xms}G -jar server.jar nogui
         in the server directory.
         """
         try:
+            logger = logging.getLogger(__name__)
             if self.xmx <= 0 or self.xms <= 0 or self.xmx < self.xms:
+                logger.error(
+                    "Invalid memory settings for %s: xmx=%s xms=%s", self.name, self.xmx, self.xms
+                )
                 return -1
             if not os.path.isfile(self.jar):
+                logger.error("Missing server.jar in %s", self.path)
                 return -1
+            # Resolve a suitable Java executable for this server
+            java_exe, _mc_version, _java_major = resolve_java_for_server(self.path)
+            if not java_exe:
+                # Fallback to PATH 'java'
+                java_exe = "java"
+                logger.warning(
+                    "Could not resolve specific Java for %s (MC=%s, target Java=%s). Falling back to PATH 'java'",
+                    self.name,
+                    _mc_version,
+                    _java_major,
+                )
+
             cmd = [
-                "java",
+                java_exe,
                 f"-Xmx{int(self.xmx)}G",
                 f"-Xms{int(self.xms)}G",
                 "-jar",
                 "server.jar",
                 "nogui",
             ]
+            # Prepare log file to capture stdout/stderr from Java
+            log_dir = os.path.join(self.path, "bot-logs")
+            try:
+                os.makedirs(log_dir, exist_ok=True)
+            except Exception:
+                logger.exception("Failed to create log directory: %s", log_dir)
+                log_dir = self.path
+            timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+            log_path = os.path.join(log_dir, f"console-{timestamp}.log")
+            try:
+                log_fh = open(log_path, "w", encoding="utf-8")
+                self.log_path = log_path
+            except Exception:
+                logger.exception("Failed to open log file, will discard output: %s", log_path)
+                log_fh = subprocess.DEVNULL
+
+            logger.info(
+                "Starting server %s | MC=%s Java=%s | cmd=%s | cwd=%s | log=%s",
+                self.name,
+                _mc_version,
+                _java_major,
+                " ".join(cmd),
+                self.path,
+                self.log_path,
+            )
+
             self.proc = subprocess.Popen(
                 cmd,
                 cwd=self.path,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+                stdout=log_fh,
+                stderr=log_fh,
                 text=True,
             )
             self.pid = self.proc.pid
             return self.pid
         except Exception:
+            logging.getLogger(__name__).exception("Failed to start server %s", getattr(self, "name", "?"))
             return -1
 
     def stop(self) -> int:

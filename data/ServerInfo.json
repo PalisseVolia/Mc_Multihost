@@ -1,4 +1,9 @@
 {
+    "Ragnamod V": {
+    "description": "[ARCHIVE] [Ragnamod V 5.8.0] Serveur démarré en 2021",
+    "ip": "ragnamodv.minebase.win:25566",
+    "places": [ {"name": "Spawn", "x": 0, "y": 120, "z": 0} ]
+    },
     "TestServer": {
     "description": "...",
     "ip": "testserver.minebase.win:25565",

@@ -22,6 +22,7 @@ from discord import app_commands
 from discord.ext import commands
 from Utils.env import get_env, load_env_from_file, parse_int_ids
 from Utils.UtilsServer import get_servers, get_available_memory_gb, get_server_info
+from Utils.McJava import resolve_java_for_server
 from typing import Optional
 
 
@@ -754,8 +755,15 @@ def run_bot() -> None:
                         view=view,
                     )
                     return
+                # TODO: remove unecessary logging Report detected MC version, Java selection, and log file path
+                java_exe, mc_ver, java_major = resolve_java_for_server(srv.path)
+                log_info = f" log: {srv.log_path}" if getattr(srv, "log_path", None) else ""
+                ver_info = f" MC={mc_ver or '?'} Java={java_major or '?'}"
                 await i.response.edit_message(
-                    content=f"Starting - {srv.name} (PID {pid}) with Xmx={xmx}G Xms={xms}G",
+                    content=(
+                        f"Starting - {srv.name} (PID {pid}) with Xmx={xmx}G Xms={xms}G |"
+                        f"{ver_info}{log_info}"
+                    ),
                     view=None,
                 )
 
