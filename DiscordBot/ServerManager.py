@@ -21,7 +21,7 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 from Utils.env import get_env, load_env_from_file, parse_int_ids
-from Utils.UtilsServer import get_servers, get_available_memory_gb
+from Utils.UtilsServer import get_servers, get_available_memory_gb, get_server_info
 from typing import Optional
 
 
@@ -86,7 +86,93 @@ def run_bot() -> None:
         await interaction.response.send_message("Hello world!", ephemeral=True)
 
     # ---------------------
-    # GENERAL COMMANDS
+    # INFO
+    # ---------------------
+
+    @bot.tree.command(name="info", description="Show server info from data/ServerInfo.json")
+    @guild_decorator
+    async def info(interaction: discord.Interaction) -> None:
+        # Build selectable server list (all discovered servers)
+        choices = servers
+        if not choices:
+            await interaction.response.send_message("No servers found.", ephemeral=True)
+            return
+
+        MAX_OPTIONS = 25
+        server_choices = choices[:MAX_OPTIONS]
+        too_many = len(choices) > MAX_OPTIONS
+
+        def build_embed_for(name: str) -> discord.Embed:
+            info_map = get_server_info()
+            entry = info_map.get(name) if isinstance(info_map, dict) else None
+            title = f"{name} — Info"
+            embed = discord.Embed(title=title, color=discord.Color.blurple())
+            if not isinstance(entry, dict):
+                embed.add_field(name="Description", value="No description set.", inline=False)
+                embed.add_field(name="IP", value="N/A", inline=False)
+                embed.add_field(name="Places of Interest", value="No places recorded yet.", inline=False)
+                return embed
+            desc = entry.get("description") or entry.get("desc") or "No description set."
+            ip = entry.get("ip") or entry.get("address") or "N/A"
+            places = entry.get("places") or entry.get("poi") or []
+            embed.add_field(name="Description", value=str(desc), inline=False)
+            embed.add_field(name="IP", value=str(ip), inline=False)
+            poi_lines: list[str] = []
+            if isinstance(places, list):
+                for p in places:
+                    if not isinstance(p, dict):
+                        continue
+                    pname = str(p.get("name") or p.get("label") or "Place")
+                    x = p.get("x")
+                    y = p.get("y")
+                    z = p.get("z")
+                    # Accept alternative key forms
+                    if x is None and "xyz" in p and isinstance(p["xyz"], (list, tuple)) and len(p["xyz"]) >= 3:
+                        x, y, z = p["xyz"][0], p["xyz"][1], p["xyz"][2]
+                    try:
+                        poi_lines.append(f"- {pname} ({int(x)}, {int(y)}, {int(z)})")
+                    except Exception:
+                        # Fallback to raw representation
+                        poi_lines.append(f"- {pname}")
+            value = "\n".join(poi_lines) if poi_lines else "No places recorded yet."
+            # Discord limits field values to 1024 chars
+            if len(value) > 1024:
+                value = value[:1010] + "... (truncated)"
+            embed.add_field(name="Places of Interest", value=value, inline=False)
+            return embed
+
+        class InfoSelect(discord.ui.Select):
+            def __init__(self, servers_list: list) -> None:
+                options = [
+                    discord.SelectOption(label=srv.name or "(unnamed)", value=srv.name or "")
+                    for srv in servers_list
+                ]
+                super().__init__(
+                    placeholder="Select a server",
+                    min_values=1,
+                    max_values=1,
+                    options=options,
+                )
+
+            async def callback(self, i: discord.Interaction) -> None:  # type: ignore[override]
+                name = self.values[0]
+                embed = build_embed_for(name)
+                await i.response.edit_message(content=None, embed=embed, view=None)
+
+        class InfoView(discord.ui.View):
+            def __init__(self) -> None:
+                super().__init__(timeout=60)
+                self.add_item(InfoSelect(server_choices))
+
+        note = " Showing first 25 servers." if too_many else ""
+        await interaction.response.send_message(
+            "Pick a server to view its info:" + note,
+            view=InfoView(),
+            ephemeral=True,
+        )
+
+    # ---------------------
+    # TODO : MINECRAFT COMMANDS
     # ---------------------
 
     # ---------------------

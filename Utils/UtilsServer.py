@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import json
+import logging
 from typing import List, Optional
 
 from Classes.MinecraftServer import MinecraftServer
@@ -66,3 +68,33 @@ def get_available_memory_gb(
         return avail if avail > 0 else 0
     except Exception:
         return 0
+
+def get_server_info() -> dict:
+    """Load info from data/ServerInfo.json.
+
+    Expected structure per server name key:
+    {
+      "MyServer": {
+        "description": "...",
+        "ip": "host:port",
+        "places": [ {"name": "Spawn", "x": 0, "y": 64, "z": 0}, ... ]
+      },
+      ...
+    }
+    """
+    try:
+        here = os.path.dirname(__file__)
+        project_root = os.path.dirname(here)
+        info_path = os.path.join(project_root, "data", "ServerInfo.json")
+        if not os.path.exists(info_path):
+            return {}
+        with open(info_path, "r", encoding="utf-8") as f:
+            raw = f.read().strip()
+            if not raw:
+                return {}
+            data = json.loads(raw)
+            if isinstance(data, dict):
+                return data
+    except Exception:
+        logging.exception("Failed to read data/ServerInfo.json")
+    return {}

@@ -1,0 +1,7 @@
+{
+    "TestServer": {
+    "description": "...",
+    "ip": "testserver.minebase.win:25565",
+    "places": [ {"name": "Spawn", "x": 0, "y": 64, "z": 0}, {"name": "Base", "x": 100, "y": 64, "z": 200} ]
+    }
+}
