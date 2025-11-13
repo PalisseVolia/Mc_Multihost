@@ -14,7 +14,7 @@ class MinecraftServer:
     """Simple Minecraft server wrapper.
 
     Attributes:
-        path: Directory containing `server.jar`.
+        path: Directory containing `server.jar` or a launcher script (e.g. run.sh).
         xmx: Max heap size in GB.
         xms: Initial heap size in GB.
         name: Optional display name; defaults to the folder name.
@@ -65,8 +65,15 @@ class MinecraftServer:
     def start(self) -> int:
         """Start the server; return PID or -1 on error.
 
-        Runs: <java> -Xmx{xmx}G -Xms{xms}G -jar server.jar nogui
-        in the server directory.
+        If `server.jar` exists, runs:
+          <java> -Xmx{xmx}G -Xms{xms}G -jar server.jar nogui
+
+        Otherwise, if a known launcher script exists (run.sh, serverstart.sh,
+        startserver.sh, start.sh), updates memory in user_jvm_args.txt then runs:
+          ./<script> nogui
+
+        In both cases, the command is executed in the server directory and
+        stdout/stderr are piped to a timestamped log file.
         """
         try:
             logger = logging.getLogger(__name__)
@@ -75,10 +82,7 @@ class MinecraftServer:
                     "Invalid memory settings for %s: xmx=%s xms=%s", self.name, self.xmx, self.xms
                 )
                 return -1
-            if not os.path.isfile(self.jar):
-                logger.error("Missing server.jar in %s", self.path)
-                return -1
-            # Resolve a suitable Java executable for this server
+            # Resolve a suitable Java executable for this server (best effort)
             java_exe, _mc_version, _java_major = resolve_java_for_server(self.path)
             if not java_exe:
                 # Fallback to PATH 'java'
@@ -89,15 +93,18 @@ class MinecraftServer:
                     _mc_version,
                     _java_major,
                 )
-
-            cmd = [
-                java_exe,
-                f"-Xmx{int(self.xmx)}G",
-                f"-Xms{int(self.xms)}G",
-                "-jar",
-                "server.jar",
-                "nogui",
-            ]
+            use_jar = os.path.isfile(self.jar)
+            script_candidates = ["run.sh", "serverstart.sh", "startserver.sh", "start.sh"]
+            script_name = None
+            if not use_jar:
+                for cand in script_candidates:
+                    p = os.path.join(self.path, cand)
+                    if os.path.isfile(p):
+                        script_name = cand
+                        break
+                if not script_name:
+                    logger.error("Missing server.jar or launcher script in %s", self.path)
+                    return -1
             # Prepare log file to capture stdout/stderr from Java
             log_dir = os.path.join(self.path, "bot-logs")
             try:
@@ -113,25 +120,81 @@ class MinecraftServer:
             except Exception:
                 logger.exception("Failed to open log file, will discard output: %s", log_path)
                 log_fh = subprocess.DEVNULL
+            if use_jar:
+                cmd = [
+                    java_exe,
+                    f"-Xmx{int(self.xmx)}G",
+                    f"-Xms{int(self.xms)}G",
+                    "-jar",
+                    "server.jar",
+                    "nogui",
+                ]
+                logger.info(
+                    "Starting (jar) %s | MC=%s Java=%s | cmd=%s | cwd=%s | log=%s",
+                    self.name,
+                    _mc_version,
+                    _java_major,
+                    " ".join(cmd),
+                    self.path,
+                    self.log_path,
+                )
+                self.proc = subprocess.Popen(
+                    cmd,
+                    cwd=self.path,
+                    stdin=subprocess.PIPE,
+                    stdout=log_fh,
+                    stderr=log_fh,
+                    text=True,
+                )
+            else:
+                # Update memory settings in user_jvm_args.txt for script-based launchers
+                try:
+                    jvm_args = os.path.join(self.path, "user_jvm_args.txt")
+                    lines: list[str] = []
+                    if os.path.isfile(jvm_args):
+                        with open(jvm_args, "r", encoding="utf-8", errors="ignore") as fh:
+                            lines = [ln.rstrip("\n") for ln in fh]
+                    # Filter out existing -Xmx/-Xms and append new ones in GB
+                    def _keep(l: str) -> bool:
+                        ls = l.strip()
+                        return not (ls.startswith("-Xmx") or ls.startswith("-Xms"))
+                    kept = [l for l in lines if _keep(l)]
+                    kept.append(f"-Xmx{int(self.xmx)}G")
+                    kept.append(f"-Xms{int(self.xms)}G")
+                    with open(jvm_args, "w", encoding="utf-8") as fh:
+                        fh.write("\n".join(kept) + "\n")
+                except Exception:
+                    logger.exception("Failed to update user_jvm_args.txt for %s", self.name)
 
-            logger.info(
-                "Starting server %s | MC=%s Java=%s | cmd=%s | cwd=%s | log=%s",
-                self.name,
-                _mc_version,
-                _java_major,
-                " ".join(cmd),
-                self.path,
-                self.log_path,
-            )
+                # Build environment to prioritize resolved Java (prepend its bin to PATH)
+                env = os.environ.copy()
+                try:
+                    java_bin = os.path.dirname(java_exe) if java_exe else None
+                    if java_bin:
+                        env["PATH"] = java_bin + os.pathsep + env.get("PATH", "")
+                except Exception:
+                    pass
 
-            self.proc = subprocess.Popen(
-                cmd,
-                cwd=self.path,
-                stdin=subprocess.PIPE,
-                stdout=log_fh,
-                stderr=log_fh,
-                text=True,
-            )
+                cmd = [f"./{script_name}", "nogui"]  # type: ignore[list-item]
+                logger.info(
+                    "Starting (script) %s via %s | MC=%s Java=%s | cmd=%s | cwd=%s | log=%s",
+                    self.name,
+                    script_name,
+                    _mc_version,
+                    _java_major,
+                    " ".join(cmd),
+                    self.path,
+                    self.log_path,
+                )
+                self.proc = subprocess.Popen(
+                    cmd,
+                    cwd=self.path,
+                    stdin=subprocess.PIPE,
+                    stdout=log_fh,
+                    stderr=log_fh,
+                    text=True,
+                    env=env,
+                )
             self.pid = self.proc.pid
             return self.pid
         except Exception:

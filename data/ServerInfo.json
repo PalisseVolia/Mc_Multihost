@@ -4,6 +4,11 @@
     "ip": "ragnamodv.minebase.win:25566",
     "places": [ {"name": "Spawn", "x": 0, "y": 120, "z": 0} ]
     },
+    "Stoneblock 3": {
+    "description": "[ARCHIVE] [COMPLETE] [Stoneblock 3 1.11.5] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
+    "ip": "stoneblock3.minebase.win:25567",
+    "places": [ {"name": "spawn", "x": 0, "y": 0, "z": 0} ]
+    },
     "TestServer": {
     "description": "...",
     "ip": "testserver.minebase.win:25565",
