@@ -1,7 +1,1 @@
-# Server ports
-TestServerPort = 25565
-OtherServerPort = 25566
-
-# Server ips
-testserver.minebase.win:25565
-testserver.minebase.win:25566
+'''python -m DiscordBot.ServerManager'''

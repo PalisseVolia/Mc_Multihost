@@ -678,7 +678,7 @@ def run_bot() -> None:
         class XmxSelect(discord.ui.Select):
             def __init__(self, available_gb: int) -> None:
                 default_xmx = 4
-                base_values = [1, 2, 4, 8, 12, 16, 20, 24, 32]
+                base_values = [1, 2, 4, 8, 16, 20]
                 # Filter by available memory, keep at least one option to satisfy Discord
                 filtered = [gb for gb in base_values if gb <= max(available_gb, 1)]
                 if not filtered:

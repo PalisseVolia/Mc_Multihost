@@ -39,6 +39,19 @@
     "ip": "po3other.minebase.win:25552",
     "places": [ {"name": "spawn", "x": 980, "y": 90, "z": -60} ]
     },
+    "Ragnamod VI": {
+    "description": "[ARCHIVE] [Ragnamod 6 ver6.1.6] Serveur démarré en 2022, une seule base souterraine",
+    "ip": "ragnamodvi.minebase.win:25553",
+    "places": [ {"name": "base", "x": 90, "y": 50, "z": 160} ]
+    },
+    "Mc Eternal": {
+    "description": "[ARCHIVE] [McEternal ver1.3.7.1] Serveur démarré en 2022, deux teams différentes",
+    "ip": "mceternal.minebase.win:25554",
+    "places": [
+        {"name": "team 1", "x": 1280, "y": 75, "z": -750},
+        {"name": "team 2", "x": -10, "y": 70, "z": 580}
+    ]
+    },
     "TestServer": {
     "description": "...",
     "ip": "testserver.minebase.win:25565",

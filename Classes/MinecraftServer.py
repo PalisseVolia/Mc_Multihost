@@ -166,6 +166,27 @@ class MinecraftServer:
                 except Exception:
                     logger.exception("Failed to update user_jvm_args.txt for %s", self.name)
 
+                # # Some launchers (e.g. classic Forge startserver.sh) use MAX_RAM/MIN_RAM
+                # # variables inside the script; update them as well when present.
+                # if script_name == "startserver.sh":
+                #     try:
+                #         script_file = os.path.join(self.path, script_name)
+                #         with open(script_file, "r", encoding="utf-8", errors="ignore") as fh:
+                #             slines = fh.readlines()
+                #         new_lines: list[str] = []
+                #         for line in slines:
+                #             stripped = line.lstrip()
+                #             if stripped.startswith("MAX_RAM="):
+                #                 new_lines.append(f"MAX_RAM={int(self.xmx)}G\n")
+                #             elif stripped.startswith("MIN_RAM="):
+                #                 new_lines.append(f"MIN_RAM={int(self.xms)}G\n")
+                #             else:
+                #                 new_lines.append(line)
+                #         with open(script_file, "w", encoding="utf-8") as fh:
+                #             fh.writelines(new_lines)
+                #     except Exception:
+                #         logger.exception("Failed to update MAX_RAM/MIN_RAM in %s", script_name)
+
                 # Build environment to prioritize resolved Java (prepend its bin to PATH)
                 env = os.environ.copy()
                 try:
