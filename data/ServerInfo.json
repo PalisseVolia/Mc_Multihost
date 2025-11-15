@@ -1,13 +1,43 @@
 {
     "Ragnamod V": {
-    "description": "[ARCHIVE] [Ragnamod V 5.8.0] Serveur démarré en 2021",
+    "description": "[ARCHIVE] [Ragnamod V ver5.8.0] Serveur démarré en 2021",
     "ip": "ragnamodv.minebase.win:25566",
     "places": [ {"name": "Spawn", "x": 0, "y": 120, "z": 0} ]
     },
     "Stoneblock 3": {
-    "description": "[ARCHIVE] [COMPLETE] [Stoneblock 3 1.11.5] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
+    "description": "[ARCHIVE] [COMPLETE] [Stoneblock 3 ver1.11.5] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
     "ip": "stoneblock3.minebase.win:25567",
     "places": [ {"name": "spawn", "x": 0, "y": 0, "z": 0} ]
+    },
+    "Enigmatica 6 Expert": {
+    "description": "[ARCHIVE] [COMPLETE] [Enigmatica 6 Expert ver1.6.2] Serveur démarré en 2023, trois teams différentes dont les bases sont acessibles via /warp",
+    "ip": "enigmatica6expert.minebase.win:25568",
+    "places": [ 
+        {"name": "team 1", "x": 1025, "y": 70, "z": -180},
+        {"name": "team 2", "x": 270, "y": 100, "z": 180},
+        {"name": "team 3", "x": 1460, "y": 80, "z": 980}
+    ]
+    },
+    "Project Ozone 3 - Final": {
+    "description": "[ARCHIVE] [COMPLETE] [Project Ozone 3 ver3.4.11F] Serveur démarré en 2024, cinq teams différentes dont les bases sont acessibles via /warp",
+    "ip": "po3final.minebase.win:25569",
+    "places": [ 
+        {"name": "mrpalisse", "x": 150, "y": 75, "z": 0},
+        {"name": "chti_nick", "x": -20, "y": 240, "z": 210},
+        {"name": "goulaminator", "x": -145, "y": 70, "z": 0},
+        {"name": "hauda_", "x": 150, "y": 70, "z": 150},
+        {"name": "jio_no", "x": 70, "y": 90, "z": -270} 
+    ]
+    },
+    "Project Ozone 3 - Old": {
+    "description": "[ARCHIVE] [Project Ozone 3 ver3.2.55] Serveur démarré en 2020, trois teams différentes",
+    "ip": "po3old.minebase.win:25551",
+    "places": [ {"name": "spawn", "x": 760, "y": 128, "z": 760} ]
+    },
+    "Project Ozone 3 - Other": {
+    "description": "[ARCHIVE] [Project Ozone 3 ver3.2.55] Serveur démarré en 2020",
+    "ip": "po3other.minebase.win:25552",
+    "places": [ {"name": "spawn", "x": 980, "y": 90, "z": -60} ]
     },
     "TestServer": {
     "description": "...",
