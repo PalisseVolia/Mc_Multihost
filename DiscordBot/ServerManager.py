@@ -77,20 +77,10 @@ def run_bot() -> None:
     # ====================================================
 
     # ---------------------
-    # TEST
-    # ---------------------
-    
-    # TODO: Example, delete later
-    @bot.tree.command(name="hello", description="Replies with Hello world!")
-    @guild_decorator
-    async def hello(interaction: discord.Interaction) -> None:
-        await interaction.response.send_message("Hello world!", ephemeral=True)
-
-    # ---------------------
     # INFO
     # ---------------------
 
-    @bot.tree.command(name="info", description="Show server info from data/ServerInfo.json")
+    @bot.tree.command(name="info", description="Show server info")
     @guild_decorator
     async def info(interaction: discord.Interaction) -> None:
         # Build selectable server list (all discovered servers)
