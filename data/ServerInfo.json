@@ -2,7 +2,7 @@
     "Ragnamod V": {
     "description": "[ARCHIVE] [Ragnamod V ver5.8.0] Serveur démarré en 2021",
     "ip": "ragnamodv.minebase.win:25566",
-    "places": [ {"name": "Spawn", "x": 0, "y": 120, "z": 0} ]
+    "places": [ {"name": "spawn", "x": 0, "y": 120, "z": 0} ]
     },
     "Stoneblock 3": {
     "description": "[ARCHIVE] [COMPLETE] [Stoneblock 3 ver1.11.5] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
@@ -45,16 +45,26 @@
     "places": [ {"name": "base", "x": 90, "y": 50, "z": 160} ]
     },
     "Mc Eternal": {
-    "description": "[ARCHIVE] [McEternal ver1.3.7.1] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
-    "ip": "mceternal.minebase.win:25554",
-    "places": [
-        {"name": "team 1", "x": 1280, "y": 75, "z": -750},
-        {"name": "team 2", "x": -10, "y": 70, "z": 580}
-    ]
+        "description": "[ARCHIVE] [McEternal ver1.3.7.1] Serveur démarré en 2022, deux teams différentes dont les bases sont acessibles via /warp",
+        "ip": "mceternal.minebase.win:25554",
+        "places": [
+            {"name": "team 1", "x": 1280, "y": 75, "z": -750},
+            {"name": "team 2", "x": -10, "y": 70, "z": 580}
+        ]
     },
-    "TestServer": {
-    "description": "...",
-    "ip": "testserver.minebase.win:25565",
-    "places": [ {"name": "Spawn", "x": 0, "y": 64, "z": 0}, {"name": "Base", "x": 100, "y": 64, "z": 200} ]
+    "Vanilla - Confinement 1": {
+    "description": "[ARCHIVE] [Vanilla ver1.16.5] Serveur démarré en 2020 durant le confinement, trop de bases pour les compter, si vous me donnez les coordonnées je les ajouterais aux infos",
+    "ip": "vanillac1.minebase.win:25555",
+    "places": [ {"name": "spawn", "x": -120, "y": 80, "z": 230} ]
+    },
+    "Vanilla - Confinement 2": {
+    "description": "[ARCHIVE] [Vanilla ver1.16.5] Serveur démarré en 2020 durant le confinement, trop de bases pour les compter, si vous me donnez les coordonnées je les ajouterais aux infos",
+    "ip": "vanillac2.minebase.win:25556",
+    "places": [ {"name": "spawn", "x": 4, "y": 80, "z": -10} ]
+    },
+    "Vanilla - Post Covid": {
+    "description": "[ARCHIVE] [Vanilla ver1.19] Serveur démarré en 2022 après le confinement, plusieurs bases proches les unes des autres",
+    "ip": "vanillapc.minebase.win:25557",
+    "places": [ {"name": "bases", "x": -1580, "y": 110, "z": -830} ]
     }
 }
