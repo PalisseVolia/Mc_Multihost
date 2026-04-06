@@ -1,1 +1,27 @@
-'''python -m DiscordBot.ServerManager'''
+Run the Discord bot:
+
+`python -m DiscordBot.ServerManager`
+
+Cloudflare dynamic DNS is supported for your Minecraft host.
+
+Add these variables to `config/.env`:
+
+`CLOUDFLARE_API_TOKEN=...`
+`CLOUDFLARE_ZONE_NAME=minebase.win`
+`CLOUDFLARE_SYNC_ON_START=true`
+
+Optional:
+
+`CLOUDFLARE_DNS_NAMES=enigmatica6expert.minebase.win,mceternal.minebase.win`
+`PUBLIC_IPV4=1.2.3.4`
+
+Behavior:
+
+- On bot startup, the repo reads hostnames from `data/ServerInfo.json` and updates matching Cloudflare `A` records to your current public IPv4.
+- If a record does not exist yet, it is created as `DNS only` with automatic TTL.
+- You can also run the sync manually with `python -m Utils.CloudflareDNS`.
+
+Cloudflare token scope:
+
+- `Zone / Zone / Read`
+- `Zone / DNS / Edit`

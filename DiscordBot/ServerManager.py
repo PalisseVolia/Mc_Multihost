@@ -20,6 +20,7 @@ import time
 import discord
 from discord import app_commands
 from discord.ext import commands
+from Utils.CloudflareDNS import maybe_sync_cloudflare_dns_on_startup
 from Utils.env import get_env, load_env_from_file, parse_int_ids
 from Utils.UtilsServer import get_servers, get_available_memory_gb, get_server_info
 from Utils.McJava import resolve_java_for_server
@@ -35,6 +36,14 @@ def _configure_logging() -> None:
 
 def run_bot() -> None:
     _configure_logging()
+
+    # Load env from config/.env before reading values
+    load_env_from_file()
+
+    try:
+        maybe_sync_cloudflare_dns_on_startup()
+    except Exception:
+        logging.exception("Cloudflare DNS sync failed")
     
     # Create a list of all available servers (single shared instances)
     servers = get_servers()
@@ -43,9 +52,6 @@ def run_bot() -> None:
         return [s for s in servers if s.is_running()]
     def stopped_servers() -> list:
         return [s for s in servers if not s.is_running()]
-
-    # Load env from config/.env before reading values
-    load_env_from_file()
 
     token = get_env("DISCORD_TOKEN", required=True)
     # Support one or many IDs via DISCORD_GUILD_IDS (comma-separated)
